@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注音打字冒險 🌟</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+  :root {
+    --sky: #6EC6F0;
+    --sun: #FFD94A;
+    --grass: #5DBB63;
+    --cloud: #FFFFFF;
+    --dark: #1A2744;
+    --pink: #FF7BAC;
+    --purple: #A78BFA;
+    --orange: #FF9F43;
+    --card-bg: rgba(255,255,255,0.92);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: linear-gradient(180deg, #B8E4F9 0%, #D8F0FF 40%, #C8EAB0 80%, #8DD47E 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  /* Floating clouds */
+  .clouds {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 200px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .cloud {
+    position: absolute;
+    background: white;
+    border-radius: 50px;
+    opacity: 0.85;
+    animation: drift linear infinite;
+  }
+  .cloud::before, .cloud::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+  }
+  .cloud-1 { width: 120px; height: 40px; top: 30px; animation-duration: 25s; animation-delay: -5s; }
+  .cloud-1::before { width: 60px; height: 60px; top: -30px; left: 15px; }
+  .cloud-1::after { width: 40px; height: 40px; top: -20px; left: 50px; }
+  .cloud-2 { width: 80px; height: 28px; top: 70px; animation-duration: 35s; animation-delay: -15s; }
+  .cloud-2::before { width: 40px; height: 40px; top: -20px; left: 10px; }
+  .cloud-3 { width: 100px; height: 35px; top: 15px; animation-duration: 30s; animation-delay: -20s; }
+  .cloud-3::before { width: 50px; height: 50px; top: -25px; left: 20px; }
+  @keyframes drift {
+    from { left: -200px; }
+    to { left: 110%; }
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: var(--dark);
+    text-shadow: 3px 3px 0 var(--sun), 5px 5px 0 rgba(0,0,0,0.08);
+    letter-spacing: 2px;
+  }
+  .header p {
+    margin-top: 6px;
+    font-size: 1rem;
+    color: #3a5a3a;
+    font-weight: 700;
+  }
+
+  /* ── Stars / Progress Bar ── */
+  .progress-area {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .level-badge {
+    background: var(--sun);
+    color: var(--dark);
+    font-weight: 900;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    padding: 8px 16px;
+    white-space: nowrap;
+    box-shadow: 0 3px 0 #c8a800;
+  }
+  .xp-bar-wrap {
+    flex: 1;
+  }
+  .xp-label {
+    font-size: 0.75rem;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .xp-bar {
+    height: 14px;
+    background: #e0e0e0;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--grass), var(--sky));
+    border-radius: 7px;
+    transition: width 0.5s ease;
+  }
+  .stars-display {
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+  }
+
+  /* ── Stage Map (choose level) ── */
+  .stage-map {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .stage-map.active { display: flex; }
+
+  .stage-title {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--dark);
+    margin-bottom: 8px;
+  }
+
+  .stage-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .stage-btn {
+    background: var(--card-bg);
+    border: 3px solid transparent;
+    border-radius: 16px;
+    padding: 16px 12px;
+    width: 140px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+    position: relative;
+  }
+  .stage-btn:hover:not(.locked) { transform: translateY(-3px); box-shadow: 0 7px 0 rgba(0,0,0,0.12); }
+  .stage-btn.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }
+  .stage-btn .stage-icon { font-size: 2rem; }
+  .stage-btn .stage-name { font-size: 0.85rem; font-weight: 900; color: var(--dark); margin-top: 6px; }
+  .stage-btn .stage-stars { font-size: 0.9rem; margin-top: 4px; }
+  .stage-btn.easy { border-color: var(--grass); }
+  .stage-btn.medium { border-color: var(--orange); }
+  .stage-btn.hard { border-color: var(--purple); }
+  .stage-btn.boss { border-color: var(--pink); }
+
+  /* ── Game Screen ── */
+  .game-screen {
+    display: none;
+  }
+  .game-screen.active { display: block; }
+
+  .game-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.13);
+    margin-bottom: 16px;
+  }
+
+  .game-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .game-level-tag {
+    font-size: 0.85rem;
+    font-weight: 900;
+    background: var(--dark);
+    color: white;
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+  .game-score {
+    font-weight: 900;
+    color: var(--dark);
+    font-size: 1rem;
+  }
+  .timer-bar-wrap {
+    height: 10px;
+    background: #eee;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #5DBB63, #FFD94A, #FF7BAC);
+    border-radius: 5px;
+    transition: width 0.1s linear;
+  }
+
+  /* Word to type */
+  .word-display {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .word-char {
+    display: inline-block;
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--dark);
+    margin: 0 4px;
+    position: relative;
+    transition: color 0.2s;
+  }
+  .word-char .zhuyin-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: #999;
+    font-weight: 400;
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .word-char.typed { color: var(--grass); }
+  .word-char.current { color: var(--orange); }
+  .word-char.wrong { color: var(--pink); animation: shake 0.3s; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  /* Input field */
+  .input-area {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 32px;
+  }
+  .type-input {
+    flex: 1;
+    padding: 14px 18px;
+    font-size: 1.3rem;
+    font-family: 'Noto Sans TC', sans-serif;
+    border: 3px solid #ddd;
+    border-radius: 14px;
+    outline: none;
+    background: white;
+    transition: border-color 0.2s;
+    color: var(--dark);
+  }
+  .type-input:focus { border-color: var(--sky); }
+  .type-input.correct { border-color: var(--grass); background: #f0fff0; }
+  .type-input.incorrect { border-color: var(--pink); background: #fff0f3; }
+
+  .skip-btn {
+    padding: 14px 18px;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #666;
+    transition: background 0.2s;
+  }
+  .skip-btn:hover { background: #e0e0e0; }
+
+  /* Progress dots */
+  .progress-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #ddd;
+    transition: background 0.3s;
+  }
+  .dot.done { background: var(--grass); }
+  .dot.current { background: var(--orange); }
+  .dot.wrong { background: var(--pink); }
+
+  /* ── Result Screen ── */
+  .result-screen {
+    display: none;
+    text-align: center;
+  }
+  .result-screen.active { display: block; }
+
+  .result-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 36px 28px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.13);
+    margin-bottom: 16px;
+  }
+  .result-emoji { font-size: 4rem; margin-bottom: 12px; }
+  .result-title { font-size: 1.8rem; font-weight: 900; color: var(--dark); margin-bottom: 8px; }
+  .result-stars { font-size: 2.5rem; margin-bottom: 16px; }
+  .result-stats {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .stat-box {
+    background: #f7f7f7;
+    border-radius: 14px;
+    padding: 12px 20px;
+    text-align: center;
+  }
+  .stat-num { font-size: 1.6rem; font-weight: 900; color: var(--dark); }
+  .stat-label { font-size: 0.75rem; color: #888; font-weight: 700; }
+
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 900;
+    font-family: 'Noto Sans TC', sans-serif;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,0,0,0.15); }
+  .btn:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+  .btn-primary { background: var(--sun); color: var(--dark); }
+  .btn-secondary { background: #e8e8e8; color: #444; }
+  .btn-back { background: none; border: none; color: #666; font-size: 0.9rem; font-weight: 700; cursor: pointer; padding: 8px; margin-bottom: 8px; font-family: inherit; }
+  .btn-back:hover { color: var(--dark); }
+
+  /* Combo popup */
+  .combo-popup {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--sun);
+    color: var(--dark);
+    font-size: 1.6rem;
+    font-weight: 900;
+    padding: 10px 28px;
+    border-radius: 40px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 999;
+    animation: popIn 0.8s ease forwards;
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.7); }
+    30% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    70% { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) scale(0.9) translateY(-20px); }
+  }
+
+  /* ── Player Select Screen ── */
+  .player-screen { display: none; }
+  .player-screen.active { display: block; }
+
+  .player-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.13);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .player-card h2 { font-size: 1.4rem; font-weight: 900; color: var(--dark); margin-bottom: 6px; }
+  .player-card p { font-size: 0.88rem; color: #777; margin-bottom: 20px; }
+
+  .player-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .player-btn {
+    background: white;
+    border: 3px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 14px 12px;
+    width: 120px;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.08);
+    position: relative;
+  }
+  .player-btn:hover { border-color: var(--sky); transform: translateY(-2px); }
+  .player-btn .p-avatar { font-size: 2.2rem; }
+  .player-btn .p-name { font-size: 0.88rem; font-weight: 900; color: var(--dark); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-btn .p-level { font-size: 0.72rem; color: #888; margin-top: 3px; }
+  .player-btn .p-stars { font-size: 0.72rem; color: var(--orange); margin-top: 2px; }
+  .player-btn.add-btn { border-style: dashed; border-color: #ccc; color: #aaa; }
+  .player-btn.add-btn:hover { border-color: var(--grass); color: var(--grass); }
+  .player-btn .delete-x {
+    position: absolute;
+    top: 6px; right: 8px;
+    font-size: 0.75rem;
+    color: #ccc;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .player-btn .delete-x:hover { color: var(--pink); background: #fff0f3; }
+
+  /* New player modal */
+  .new-player-modal { display: none; }
+
+  /* Current player tag in HUD */
+  .player-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .player-tag:hover { background: rgba(0,0,0,0.05); }
+  .player-tag .p-avatar-sm { font-size: 1.2rem; }
+  .player-tag .p-name-sm { font-size: 0.82rem; font-weight: 900; color: var(--dark); }
+  .player-tag .switch-hint { font-size: 0.65rem; color: #aaa; }
+
+  /* ── Name Modal ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: white;
+    border-radius: 24px;
+    padding: 32px 28px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    transform: scale(0.9);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.active .modal-box { transform: scale(1); }
+  .modal-box h2 { font-size: 1.3rem; font-weight: 900; color: var(--dark); margin-bottom: 8px; }
+  .modal-box p { font-size: 0.9rem; color: #666; margin-bottom: 18px; }
+  .modal-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    font-family: 'Noto Sans TC', sans-serif;
+    border: 3px solid #ddd;
+    border-radius: 12px;
+    outline: none;
+    margin-bottom: 16px;
+    color: var(--dark);
+    text-align: center;
+  }
+  .modal-input:focus { border-color: var(--sky); }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+  /* ── Leaderboard Screen ── */
+  .leaderboard-screen { display: none; }
+  .leaderboard-screen.active { display: block; }
+
+  .lb-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.13);
+    margin-bottom: 16px;
+  }
+  .lb-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .lb-header h2 { font-size: 1.5rem; font-weight: 900; color: var(--dark); }
+  .lb-header p { font-size: 0.85rem; color: #888; margin-top: 4px; }
+
+  .lb-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .lb-tab {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 2px solid #ddd;
+    background: white;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.15s;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .lb-tab.active { background: var(--dark); color: white; border-color: var(--dark); }
+
+  .lb-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #f9f9f9;
+    transition: background 0.15s;
+  }
+  .lb-row.gold { background: linear-gradient(90deg, #FFF8DC, #FFFAE8); border: 2px solid #FFD94A; }
+  .lb-row.silver { background: linear-gradient(90deg, #F5F5F5, #FAFAFA); border: 2px solid #C0C0C0; }
+  .lb-row.bronze { background: linear-gradient(90deg, #FFF0E8, #FFF5EF); border: 2px solid #CD7F32; }
+  .lb-row.highlight { background: #EEF6FF; border: 2px solid var(--sky); }
+
+  .lb-rank { font-size: 1.3rem; width: 32px; text-align: center; flex-shrink: 0; }
+  .lb-name { flex: 1; font-weight: 700; color: var(--dark); font-size: 0.95rem; }
+  .lb-meta { font-size: 0.75rem; color: #999; }
+  .lb-score { font-size: 1.1rem; font-weight: 900; color: var(--dark); }
+  .lb-stars { font-size: 0.8rem; }
+
+  .lb-empty { text-align: center; color: #aaa; padding: 28px; font-size: 0.95rem; }
+
+  .lb-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .header h1 { font-size: 1.8rem; }
+    .stage-row { flex-wrap: wrap; }
+    .stage-btn { width: 130px; }
+    .word-char { font-size: 2.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="clouds">
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🌟 注音打字冒險 🌟</h1>
+    <p>用鍵盤征服每一個注音！</p>
+  </div>
+
+  <!-- XP / Level Bar -->
+  <div class="progress-area">
+    <div class="player-tag" onclick="switchPlayer()" title="切換角色">
+      <span class="p-avatar-sm" id="hudAvatar">🐣</span>
+      <div>
+        <div class="p-name-sm" id="hudName">選角色</div>
+        <div class="switch-hint">點我切換</div>
+      </div>
+    </div>
+    <div class="level-badge" id="levelBadge">Lv.1</div>
+    <div class="xp-bar-wrap">
+      <div class="xp-label" id="xpLabel">經驗值：0 / 100</div>
+      <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+    <div class="stars-display" id="totalStars">⭐ 0</div>
+  </div>
+
+  <!-- Player Select Screen -->
+  <div class="player-screen active" id="playerScreen">
+    <div class="player-card">
+      <h2>👋 你是誰？</h2>
+      <p>選擇你的角色，進度分開記錄！</p>
+      <div class="player-list" id="playerList"></div>
+    </div>
+  </div>
+
+  <!-- New Player Modal -->
+  <div class="modal-overlay" id="newPlayerModal">
+    <div class="modal-box">
+      <h2>✨ 新增角色</h2>
+      <p>選一個頭像，輸入你的名字！</p>
+      <div id="avatarPicker" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;"></div>
+      <input class="modal-input" id="newPlayerName" placeholder="輸入名字（例如：小明）" maxlength="8" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeNewPlayerModal()">取消</button>
+        <button class="btn btn-primary" onclick="createNewPlayer()">出發！🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard Screen -->
+  <div class="leaderboard-screen" id="leaderboardScreen">
+    <button class="btn-back" onclick="backToMap()">← 返回關卡地圖</button>
+    <div class="lb-card">
+      <div class="lb-header">
+        <h2>🏆 排行榜</h2>
+        <p>本機歷史最高分紀錄</p>
+      </div>
+      <div class="lb-tabs" id="lbTabs">
+        <button class="lb-tab active" onclick="switchLbTab('all')">全部</button>
+        <button class="lb-tab" onclick="switchLbTab('easy')">🌱 新手村</button>
+        <button class="lb-tab" onclick="switchLbTab('medium')">🌻 草原關</button>
+        <button class="lb-tab" onclick="switchLbTab('hard')">🏔️ 山頂關</button>
+        <button class="lb-tab" onclick="switchLbTab('boss')">🐉 龍城</button>
+        <button class="lb-tab" onclick="switchLbTab('paragraph')">📖 文章</button>
+        <button class="lb-tab" onclick="switchLbTab('survival')">⚡ 變強</button>
+      </div>
+      <div class="lb-list" id="lbList"></div>
+      <div class="lb-actions">
+        <button class="btn btn-secondary" onclick="clearLeaderboard()">清除記錄 🗑️</button>
+        <button class="btn btn-primary" onclick="backToMap()">返回地圖 🗺️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stage Map -->
+  <div class="stage-map active" id="stageMap">
+    <div class="stage-title">✨ 選擇關卡 ✨</div>
+    <div class="stage-row">
+      <div class="stage-btn easy" onclick="startStage('easy')">
+        <div class="stage-icon">🌱</div>
+        <div class="stage-name">新手村</div>
+        <div style="font-size:0.7rem;color:#666;margin-top:3px;">單一注音</div>
+        <div class="stage-stars" id="stars-easy">☆☆☆☆☆</div>
+      </div>
+      <div class="stage-btn medium" id="btn-medium" onclick="startStage('medium')">
+        <div class="stage-icon">🌻</div>
+        <div class="stage-name">草原關</div>
+        <div style="font-size:0.7rem;color:#666;margin-top:3px;">注音組合</div>
+        <div class="stage-stars" id="stars-medium">☆☆☆☆☆</div>
+      </div>
+      <div class="stage-btn hard locked" id="btn-hard" onclick="startStage('hard')">
+        <div class="stage-icon">🏔️</div>
+        <div class="stage-name">山頂關</div>
+        <div style="font-size:0.7rem;color:#666;margin-top:3px;">詞語挑戰</div>
+        <div class="stage-stars" id="stars-hard">☆☆☆☆☆</div>
+      </div>
+      <div class="stage-btn boss locked" id="btn-boss" onclick="startStage('boss')">
+        <div class="stage-icon">🐉</div>
+        <div class="stage-name">龍城決戰</div>
+        <div style="font-size:0.7rem;color:#666;margin-top:3px;">句子挑戰</div>
+        <div class="stage-stars" id="stars-boss">☆☆☆☆☆</div>
+      </div>
+    </div>
+    <div class="stage-row" style="margin-top:12px;">
+      <div class="stage-btn locked" id="btn-paragraph" onclick="startStage('paragraph')" style="border-color:#7C3AED;width:160px;">
+        <div class="stage-icon">📖</div>
+        <div class="stage-name">文章段落</div>
+        <div style="font-size:0.7rem;color:#666;margin-top:3px;">整段打字</div>
+        <div class="stage-stars" id="stars-paragraph">☆☆☆☆☆</div>
+      </div>
+      <div class="stage-btn locked" id="btn-survival" onclick="startStage('survival')" style="border-color:#DC2626;width:160px;">
+        <div class="stage-icon">⚡</div>
+        <div class="stage-name">變強模式</div>
+        <div style="font-size:0.7rem;color:#DC2626;margin-top:3px;font-weight:900;">時間越來越短！</div>
+        <div class="stage-stars" id="stars-survival">☆☆☆☆☆</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="openLeaderboard()" style="font-size:0.9rem;padding:10px 24px;">🏆 查看排行榜</button>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="game-screen" id="gameScreen">
+    <button class="btn-back" onclick="backToMap()">← 返回關卡地圖</button>
+    <div class="game-card">
+      <div class="game-top">
+        <div class="game-level-tag" id="gameLevelTag">🌱 新手村</div>
+        <div class="game-score">得分：<span id="scoreDisplay">0</span></div>
+      </div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar"></div></div>
+      <div class="word-display" id="wordDisplay"></div>
+      <div class="input-area">
+        <input type="text" class="type-input" id="typeInput" placeholder="打完字按 Enter 確認 ↵" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button class="skip-btn" onclick="skipWord()">跳過</button>
+      </div>
+      <div class="progress-dots" id="progressDots"></div>
+    </div>
+  </div>
+
+  <!-- Result Screen -->
+  <div class="result-screen" id="resultScreen">
+    <div class="result-card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <div class="result-title" id="resultTitle">太厲害了！</div>
+      <div class="result-stars" id="resultStars">⭐⭐⭐</div>
+      <div class="result-stats">
+        <div class="stat-box">
+          <div class="stat-num" id="statCorrect">0</div>
+          <div class="stat-label">答對</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">總題數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statScore">0</div>
+          <div class="stat-label">得分</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="retryStage()">再挑戰 🔁</button>
+        <button class="btn btn-secondary" onclick="backToMap()">地圖 🗺️</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Data ──
+const STAGES = {
+  easy: {
+    name: '🌱 新手村',
+    timePerWord: 15,
+    words: [
+      { text: '貓', zhuyin: 'ㄇㄠ' },
+      { text: '狗', zhuyin: 'ㄍㄡ' },
+      { text: '魚', zhuyin: 'ㄩ' },
+      { text: '鳥', zhuyin: 'ㄋㄧㄠ' },
+      { text: '花', zhuyin: 'ㄏㄨㄚ' },
+      { text: '樹', zhuyin: 'ㄕㄨ' },
+      { text: '水', zhuyin: 'ㄕㄨㄟ' },
+      { text: '火', zhuyin: 'ㄏㄨㄛ' },
+      { text: '山', zhuyin: 'ㄕㄢ' },
+      { text: '雨', zhuyin: 'ㄩˇ' },
+    ]
+  },
+  medium: {
+    name: '🌻 草原關',
+    timePerWord: 20,
+    words: [
+      { text: '蘋果', zhuyin: 'ㄆㄧㄥˊ ㄍㄨㄛˇ' },
+      { text: '香蕉', zhuyin: 'ㄒㄧㄤ ㄐㄧㄠ' },
+      { text: '西瓜', zhuyin: 'ㄒㄧ ㄍㄨㄚ' },
+      { text: '太陽', zhuyin: 'ㄊㄞˋ ㄧㄤˊ' },
+      { text: '月亮', zhuyin: 'ㄩㄝˋ ㄌㄧㄤˋ' },
+      { text: '星星', zhuyin: 'ㄒㄧㄥ ㄒㄧㄥ' },
+      { text: '學校', zhuyin: 'ㄒㄩㄝˊ ㄒㄧㄠˋ' },
+      { text: '老師', zhuyin: 'ㄌㄠˇ ㄕ' },
+    ]
+  },
+  hard: {
+    name: '🏔️ 山頂關',
+    timePerWord: 25,
+    words: [
+      { text: '巧克力', zhuyin: 'ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ' },
+      { text: '冰淇淋', zhuyin: 'ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ' },
+      { text: '圖書館', zhuyin: 'ㄊㄨˊ ㄕㄨ ㄍㄨㄢˇ' },
+      { text: '運動場', zhuyin: 'ㄩㄣˋ ㄉㄨㄥˋ ㄔㄤˇ' },
+      { text: '小提琴', zhuyin: 'ㄒㄧㄠˇ ㄊㄧˊ ㄑㄧㄣˊ' },
+      { text: '電腦課', zhuyin: 'ㄉㄧㄢˋ ㄋㄠˇ ㄎㄜˋ' },
+      { text: '好朋友', zhuyin: 'ㄏㄠˇ ㄆㄥˊ ㄧㄡˇ' },
+    ]
+  },
+  boss: {
+    name: '🐉 龍城決戰',
+    timePerWord: 35,
+    words: [
+      { text: '今天天氣很好', zhuyin: 'ㄐㄧㄣ ㄊㄧㄢ ㄊㄧㄢ ㄑㄧˋ ㄏㄣˇ ㄏㄠˇ' },
+      { text: '我喜歡吃蘋果', zhuyin: 'ㄨㄛˇ ㄒㄧˇ ㄏㄨㄢ ㄔ ㄆㄧㄥˊ ㄍㄨㄛˇ' },
+      { text: '小貓在睡覺', zhuyin: 'ㄒㄧㄠˇ ㄇㄠ ㄗㄞˋ ㄕㄨㄟˋ ㄐㄧㄠˋ' },
+      { text: '我愛我的家人', zhuyin: 'ㄨㄛˇ ㄞˋ ㄨㄛˇ ㄉㄜ˙ ㄐㄧㄚ ㄖㄣˊ' },
+      { text: '努力學習很重要', zhuyin: 'ㄋㄨˇ ㄌㄧˋ ㄒㄩㄝˊ ㄒㄧˊ ㄏㄣˇ ㄓㄨㄥˋ ㄧㄠˋ' },
+    ]
+  },
+  paragraph: {
+    name: '📖 文章段落',
+    timePerWord: 60,
+    isParagraph: true,
+    words: [
+      { text: '春天來了，花園裡開滿了美麗的花朵。', zhuyin: '' },
+      { text: '小明每天早上都會幫媽媽打掃家裡，讓家變得乾淨整潔。', zhuyin: '' },
+      { text: '學習注音符號需要耐心和練習，每天進步一點點就很棒了。', zhuyin: '' },
+      { text: '一家人一起吃晚飯，分享今天發生的有趣事情，感覺好幸福。', zhuyin: '' },
+      { text: '圖書館裡有很多書，每一本都是通往新世界的大門。', zhuyin: '' },
+    ]
+  },
+  survival: {
+    name: '⚡ 變強模式',
+    timePerWord: 20,
+    isSurvival: true,
+    words: [
+      { text: '蘋果', zhuyin: 'ㄆㄧㄥˊ ㄍㄨㄛˇ' },
+      { text: '星星', zhuyin: 'ㄒㄧㄥ ㄒㄧㄥ' },
+      { text: '圖書館', zhuyin: 'ㄊㄨˊ ㄕㄨ ㄍㄨㄢˇ' },
+      { text: '巧克力', zhuyin: 'ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ' },
+      { text: '好朋友', zhuyin: 'ㄏㄠˇ ㄆㄥˊ ㄧㄡˇ' },
+      { text: '學校', zhuyin: 'ㄒㄩㄝˊ ㄒㄧㄠˋ' },
+      { text: '太陽', zhuyin: 'ㄊㄞˋ ㄧㄤˊ' },
+      { text: '冰淇淋', zhuyin: 'ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ' },
+      { text: '小提琴', zhuyin: 'ㄒㄧㄠˇ ㄊㄧˊ ㄑㄧㄣˊ' },
+      { text: '運動場', zhuyin: 'ㄩㄣˋ ㄉㄨㄥˋ ㄔㄤˇ' },
+    ]
+  }
+};
+
+const UNLOCK = { easy: null, medium: null, hard: 'easy', boss: 'medium', paragraph: 'boss', survival: 'boss' };
+const STAGE_ORDER = ['easy', 'medium', 'hard', 'boss', 'paragraph', 'survival'];
+
+// ── State ──
+// ── Multi-Player System ──
+const AVATARS = ['🐱','🐶','🐰','🐸','🦊','🐼','🐨','🦁','🐯','🐻','🦄','🐲'];
+let currentPlayerId = null;
+
+function loadPlayers() {
+  try { return JSON.parse(localStorage.getItem('zhuyin_players') || '[]'); } catch(e) { return []; }
+}
+function savePlayers(players) {
+  try { localStorage.setItem('zhuyin_players', JSON.stringify(players)); } catch(e) {}
+}
+function getPlayer(id) {
+  return loadPlayers().find(p => p.id === id) || null;
+}
+function savePlayer(data) {
+  const players = loadPlayers();
+  const idx = players.findIndex(p => p.id === data.id);
+  if (idx >= 0) players[idx] = data; else players.push(data);
+  savePlayers(players);
+}
+function newPlayerData(name, avatar) {
+  return { id: Date.now().toString(), name, avatar, level: 1, xp: 0, totalStars: 0, stageStars: { easy:0, medium:0, hard:0, boss:0, paragraph:0, survival:0 } };
+}
+
+function switchPlayer() {
+  clearInterval(state.timerInterval);
+  hide('stageMap');
+  hide('gameScreen');
+  hide('resultScreen');
+  hide('leaderboardScreen');
+  show('playerScreen');
+  renderPlayerList();
+}
+
+function selectPlayer(id) {
+  currentPlayerId = id;
+  const p = getPlayer(id);
+  state.level = p.level;
+  state.xp = p.xp;
+  state.totalStars = p.totalStars;
+  state.stageStars = { ...p.stageStars };
+  document.getElementById('hudAvatar').textContent = p.avatar;
+  document.getElementById('hudName').textContent = p.name;
+  hide('playerScreen');
+  show('stageMap');
+  updateHUD();
+  updateStageButtons();
+}
+
+function renderPlayerList() {
+  const players = loadPlayers();
+  const list = document.getElementById('playerList');
+  const starCount = s => Object.values(s).reduce((a,b) => a+b, 0);
+  list.innerHTML = players.map(p => `
+    <div class="player-btn" onclick="selectPlayer('${p.id}')">
+      <span class="delete-x" onclick="event.stopPropagation();deletePlayer('${p.id}')">✕</span>
+      <div class="p-avatar">${p.avatar}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-level">Lv.${p.level}</div>
+      <div class="p-stars">⭐ ${starCount(p.stageStars)}</div>
+    </div>
+  `).join('') + `
+    <div class="player-btn add-btn" onclick="openNewPlayerModal()">
+      <div style="font-size:2rem;">＋</div>
+      <div class="p-name" style="color:#aaa;">新增角色</div>
+    </div>`;
+}
+
+function deletePlayer(id) {
+  if (!confirm('確定刪除這個角色？進度會消失喔！')) return;
+  const players = loadPlayers().filter(p => p.id !== id);
+  savePlayers(players);
+  if (currentPlayerId === id) currentPlayerId = null;
+  renderPlayerList();
+}
+
+// New player modal
+function openNewPlayerModal() {
+  selectedAvatar = AVATARS[0];
+  document.getElementById('newPlayerModal').classList.add('active');
+  document.getElementById('newPlayerName').value = '';
+  renderAvatarPicker();
+  setTimeout(() => document.getElementById('newPlayerName').focus(), 100);
+}
+function closeNewPlayerModal() {
+  document.getElementById('newPlayerModal').classList.remove('active');
+}
+
+let selectedAvatar = '🐱';
+function renderAvatarPicker() {
+  selectedAvatar = selectedAvatar || AVATARS[0];
+  document.getElementById('avatarPicker').innerHTML = AVATARS.map(a => `
+    <button type="button" onclick="pickAvatar('${a}')" style="font-size:1.6rem;padding:6px 8px;border:2px solid ${a===selectedAvatar?'#6EC6F0':'#eee'};border-radius:10px;background:${a===selectedAvatar?'#EEF6FF':'white'};cursor:pointer;transition:all 0.15s;">${a}</button>
+  `).join('');
+}
+function pickAvatar(a) {
+  selectedAvatar = a;
+  renderAvatarPicker();
+}
+function createNewPlayer() {
+  const name = document.getElementById('newPlayerName').value.trim();
+  if (!name) { document.getElementById('newPlayerName').focus(); return; }
+  const p = newPlayerData(name, selectedAvatar);
+  savePlayer(p);
+  closeNewPlayerModal();
+  selectPlayer(p.id);
+}
+
+let state = {
+  level: 1, xp: 0, totalStars: 0,
+  stageStars: { easy: 0, medium: 0, hard: 0, boss: 0 },
+  currentStage: null, words: [], wordIndex: 0,
+  score: 0, correctCount: 0, timerInterval: null, timeLeft: 0, combo: 0,
+};
+
+function saveState() {
+  if (!currentPlayerId) return;
+  const p = getPlayer(currentPlayerId);
+  if (!p) return;
+  p.level = state.level; p.xp = state.xp;
+  p.totalStars = state.totalStars; p.stageStars = { ...state.stageStars };
+  savePlayer(p);
+}
+
+// ── HUD ──
+function updateHUD() {
+  const xpNeeded = state.level * 100;
+  document.getElementById('levelBadge').textContent = `Lv.${state.level}`;
+  document.getElementById('xpLabel').textContent = `經驗值：${state.xp} / ${xpNeeded}`;
+  document.getElementById('xpFill').style.width = `${Math.min(100, (state.xp / xpNeeded) * 100)}%`;
+  document.getElementById('totalStars').textContent = `⭐ ${state.totalStars}`;
+}
+
+function addXP(amount) {
+  state.xp += amount;
+  const needed = state.level * 100;
+  if (state.xp >= needed) {
+    state.xp -= needed;
+    state.level++;
+    showCombo('🎊 升級了！Lv.' + state.level);
+  }
+  updateHUD();
+}
+
+function updateStageButtons() {
+  STAGE_ORDER.forEach(id => {
+    const stars = state.stageStars[id] || 0;
+    const starStr = ['☆☆☆☆☆','⭐☆☆☆☆','⭐⭐☆☆☆','⭐⭐⭐☆☆','⭐⭐⭐⭐☆','⭐⭐⭐⭐⭐'][stars] || '☆☆☆☆☆';
+    document.getElementById('stars-' + id).textContent = starStr;
+    const btn = document.getElementById('btn-' + id);
+    if (!btn) return;
+    const req = UNLOCK[id];
+    const unlocked = !req || (state.stageStars[req] || 0) > 0;
+    btn.classList.toggle('locked', !unlocked);
+  });
+}
+
+// ── Stage Start ──
+function startStage(stageId) {
+  const req = UNLOCK[stageId];
+  if (req && !(state.stageStars[req] > 0)) return;
+
+  state.currentStage = stageId;
+  const stageData = STAGES[stageId];
+  state.words = shuffle([...stageData.words]).slice(0, stageData.isParagraph ? 5 : 8);
+  state.wordIndex = 0;
+  state.score = 0;
+  state.correctCount = 0;
+  state.combo = 0;
+  state.survivalTime = stageData.timePerWord; // survival: resets per word
+
+  document.getElementById('gameLevelTag').textContent = stageData.name;
+  document.getElementById('scoreDisplay').textContent = '0';
+
+  show('gameScreen');
+  hide('stageMap');
+  hide('resultScreen');
+
+  buildProgressDots();
+  loadWord();
+  document.getElementById('typeInput').focus();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── Word Loading ──
+function loadWord() {
+  clearInterval(state.timerInterval);
+  const input = document.getElementById('typeInput');
+  input.value = '';
+  input.className = 'type-input';
+  input.focus();
+
+  const word = state.words[state.wordIndex];
+  const stageData = STAGES[state.currentStage];
+
+  if (stageData.isParagraph) {
+    renderParagraphDisplay(word);
+  } else {
+    renderWordDisplay(word);
+  }
+  updateDot(state.wordIndex, 'current');
+
+  // Survival: shrink time each question (min 5s)
+  let timeLimit;
+  if (stageData.isSurvival) {
+    timeLimit = Math.max(5, state.survivalTime - state.wordIndex * 1.5);
+  } else {
+    timeLimit = stageData.timePerWord;
+  }
+  state.timeLeft = timeLimit;
+  updateTimerBar(1);
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft -= 0.1;
+    updateTimerBar(state.timeLeft / timeLimit);
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      handleWrong();
+    }
+  }, 100);
+}
+
+function renderParagraphDisplay(word) {
+  const wrap = document.getElementById('wordDisplay');
+  wrap.innerHTML = `<div style="font-size:1.2rem;font-weight:700;color:var(--dark);line-height:1.8;text-align:left;background:#f9f9f9;padding:16px;border-radius:12px;border-left:4px solid var(--purple);">${word.text}</div>`;
+}
+
+function renderWordDisplay(word) {
+  const chars = word.text.split('');
+  const zhuyins = word.zhuyin.split(' ');
+  const wrap = document.getElementById('wordDisplay');
+  wrap.innerHTML = chars.map((c, i) => `
+    <span class="word-char" id="wc-${i}">
+      ${c}
+      <span class="zhuyin-hint">${zhuyins[i] || ''}</span>
+    </span>`).join('');
+}
+
+function updateTimerBar(ratio) {
+  const bar = document.getElementById('timerBar');
+  bar.style.width = `${Math.max(0, ratio * 100)}%`;
+  bar.style.background = ratio > 0.5
+    ? 'linear-gradient(90deg, #5DBB63, #FFD94A)'
+    : ratio > 0.25
+    ? 'linear-gradient(90deg, #FFD94A, #FF9F43)'
+    : 'linear-gradient(90deg, #FF9F43, #FF7BAC)';
+}
+
+// ── Input Check ──
+let isComposing = false;
+
+document.getElementById('typeInput').addEventListener('compositionstart', function() {
+  isComposing = true;
+});
+document.getElementById('typeInput').addEventListener('compositionend', function() {
+  isComposing = false;
+});
+
+document.getElementById('typeInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !isComposing) {
+    e.preventDefault();
+    checkAnswer(this);
+  }
+});
+
+document.getElementById('typeInput').addEventListener('input', function() {
+  if (isComposing) return;
+  // 即時標示輸入狀態
+  const word = state.words[state.wordIndex];
+  const typed = this.value.trim();
+  if (typed.length > 0) {
+    this.className = typed === word.text ? 'type-input correct' : 'type-input';
+  } else {
+    this.className = 'type-input';
+  }
+});
+
+function checkAnswer(input) {
+  const word = state.words[state.wordIndex];
+  const typed = input.value.trim();
+  if (!typed) return;
+
+  if (typed === word.text) {
+    clearInterval(state.timerInterval);
+    input.className = 'type-input correct';
+    state.combo++;
+    const bonus = state.combo >= 3 ? 20 : state.combo >= 2 ? 10 : 0;
+    const pts = 10 + bonus + Math.ceil(state.timeLeft * 2);
+    state.score += pts;
+    state.correctCount++;
+    document.getElementById('scoreDisplay').textContent = state.score;
+
+    if (state.combo === 3) showCombo('🔥 3 連擊！');
+    else if (state.combo === 5) showCombo('⚡ 5 連擊！');
+    else if (state.combo === 8) showCombo('💥 8 連擊！！');
+
+    updateDot(state.wordIndex, 'done');
+    highlightChars('right');
+    setTimeout(nextWord, 800);
+  } else {
+    clearInterval(state.timerInterval);
+    handleWrong();
+  }
+}
+
+function handleWrong() {
+  state.combo = 0;
+  updateDot(state.wordIndex, 'wrong');
+  highlightChars('wrong');
+  document.getElementById('typeInput').className = 'type-input incorrect';
+  setTimeout(nextWord, 800);
+}
+
+function skipWord() {
+  clearInterval(state.timerInterval);
+  handleWrong();
+}
+
+function highlightChars(mode) {
+  const word = state.words[state.wordIndex];
+  word.text.split('').forEach((_, i) => {
+    const el = document.getElementById('wc-' + i);
+    if (el) el.classList.add(mode === 'right' ? 'typed' : 'wrong');
+  });
+}
+
+function nextWord() {
+  state.wordIndex++;
+  if (state.wordIndex >= state.words.length) {
+    endGame();
+  } else {
+    loadWord();
+  }
+}
+
+// ── Progress Dots ──
+function buildProgressDots() {
+  const wrap = document.getElementById('progressDots');
+  wrap.innerHTML = state.words.map((_, i) => `<div class="dot" id="dot-${i}"></div>`).join('');
+}
+
+function updateDot(i, cls) {
+  const d = document.getElementById('dot-' + i);
+  if (d) { d.className = 'dot'; d.classList.add(cls); }
+}
+
+// ── End Game ──
+function endGame() {
+  clearInterval(state.timerInterval);
+  const total = state.words.length;
+  const pct = state.correctCount / total;
+  const stars = pct >= 1 ? 5 : pct >= 0.87 ? 4 : pct >= 0.7 ? 3 : pct >= 0.5 ? 2 : pct >= 0.25 ? 1 : 0;
+
+  if (stars > (state.stageStars[state.currentStage] || 0)) {
+    const diff = stars - (state.stageStars[state.currentStage] || 0);
+    state.totalStars += diff;
+    state.stageStars[state.currentStage] = stars;
+  }
+
+  addXP(state.score);
+  saveState();
+  updateStageButtons();
+
+  // 自動登記排行榜
+  if (currentPlayerId) {
+    const p = getPlayer(currentPlayerId);
+    if (p) submitScoreWithName(p.avatar + ' ' + p.name);
+  }
+
+  const emojis = ['😢', '😅', '😊', '🎉', '🏆', '👑'];
+  const titles = ['繼續加油！', '有進步！', '不錯喔！', '好厲害！', '太完美了！', '滿分王者！！'];
+  const starStr = ['☆☆☆☆☆','⭐☆☆☆☆','⭐⭐☆☆☆','⭐⭐⭐☆☆','⭐⭐⭐⭐☆','⭐⭐⭐⭐⭐'][stars];
+
+  document.getElementById('resultEmoji').textContent = emojis[stars];
+  document.getElementById('resultTitle').textContent = titles[stars];
+  document.getElementById('resultStars').textContent = starStr;
+  document.getElementById('statCorrect').textContent = state.correctCount;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statScore').textContent = state.score;
+
+  show('resultScreen');
+  hide('gameScreen');
+}
+
+// ── Navigation ──
+function retryStage() {
+  hide('resultScreen');
+  startStage(state.currentStage);
+}
+
+function backToMap() {
+  clearInterval(state.timerInterval);
+  hide('gameScreen');
+  hide('resultScreen');
+  hide('leaderboardScreen');
+  show('stageMap');
+}
+
+// ── Combo Popup ──
+function showCombo(text) {
+  const el = document.createElement('div');
+  el.className = 'combo-popup';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+// ── Helpers ──
+function show(id) { document.getElementById(id).classList.add('active'); }
+function hide(id) { document.getElementById(id).classList.remove('active'); }
+
+// ── Leaderboard ──
+let currentLbTab = 'all';
+
+function loadLeaderboard() {
+  try {
+    return JSON.parse(localStorage.getItem('zhuyin_lb') || '[]');
+  } catch(e) { return []; }
+}
+
+function saveLeaderboard(lb) {
+  try { localStorage.setItem('zhuyin_lb', JSON.stringify(lb)); } catch(e) {}
+}
+
+function openNameModal() {
+  // Auto-fill current player name if logged in
+  const p = currentPlayerId ? getPlayer(currentPlayerId) : null;
+  if (p) {
+    // Skip modal, submit directly with player name
+    submitScoreWithName(p.avatar + ' ' + p.name);
+    return;
+  }
+  document.getElementById('nameModal').classList.add('active');
+  document.getElementById('nameInput').value = '';
+  setTimeout(() => document.getElementById('nameInput').focus(), 100);
+}
+
+function submitScore() {
+  const name = document.getElementById('nameInput').value.trim() || '匿名';
+  closeModal();
+  submitScoreWithName(name);
+}
+
+function submitScoreWithName(name) {
+  const lb = loadLeaderboard();
+  const stageNames = { easy:'新手村', medium:'草原關', hard:'山頂關', boss:'龍城決戰' };
+  lb.push({
+    name,
+    score: state.score,
+    correct: state.correctCount,
+    total: state.words.length,
+    stage: state.currentStage,
+    stageName: stageNames[state.currentStage],
+    stars: state.stageStars[state.currentStage] || 0,
+    date: new Date().toLocaleDateString('zh-TW', { month:'numeric', day:'numeric' })
+  });
+  lb.sort((a,b) => b.score - a.score);
+  saveLeaderboard(lb.slice(0, 50));
+  showCombo('🏅 已登記！');
+  setTimeout(() => openLeaderboard(), 600);
+}
+
+function openLeaderboard() {
+  hide('stageMap');
+  hide('resultScreen');
+  hide('gameScreen');
+  show('leaderboardScreen');
+  currentLbTab = 'all';
+  renderLbTabs();
+  renderLbList();
+}
+
+function switchLbTab(tab) {
+  currentLbTab = tab;
+  renderLbTabs();
+  renderLbList();
+}
+
+function renderLbTabs() {
+  document.querySelectorAll('.lb-tab').forEach((el, i) => {
+    const tabs = ['all','easy','medium','hard','boss'];
+    el.classList.toggle('active', tabs[i] === currentLbTab);
+  });
+}
+
+function renderLbList() {
+  const lb = loadLeaderboard();
+  const filtered = currentLbTab === 'all' ? lb : lb.filter(r => r.stage === currentLbTab);
+  const medals = ['🥇','🥈','🥉'];
+  const rowClass = ['gold','silver','bronze'];
+
+  const list = document.getElementById('lbList');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="lb-empty">還沒有紀錄<br>快去挑戰關卡吧！🎮</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.slice(0, 10).map((r, i) => `
+    <div class="lb-row ${rowClass[i] || ''}">
+      <div class="lb-rank">${medals[i] || (i+1)}</div>
+      <div style="flex:1">
+        <div class="lb-name">${r.name}</div>
+        <div class="lb-meta">${r.stageName || ''} · ${r.date || ''} · ${r.correct}/${r.total} 答對</div>
+      </div>
+      <div style="text-align:right">
+        <div class="lb-score">${r.score}</div>
+        <div class="lb-stars">${['','⭐','⭐⭐','⭐⭐⭐','⭐⭐⭐⭐','⭐⭐⭐⭐⭐'][r.stars] || ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function clearLeaderboard() {
+  if (!confirm('確定要清除所有排行榜記錄嗎？')) return;
+  localStorage.removeItem('zhuyin_lb');
+  renderLbList();
+}
+
+// ── Init ──
+renderPlayerList();
+// If no players yet, open new player modal automatically
+if (loadPlayers().length === 0) setTimeout(openNewPlayerModal, 300);
+</script>
+</body>
+</html>
