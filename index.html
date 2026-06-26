@@ -816,6 +816,50 @@
 </div>
 
 <script>
+/* Maggie Lab Analytics - zhuyin_game */
+(function(){
+  const ANALYTICS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwFuPv3IoIuv0ZcxRsQNVLO3K2J6WKkqqkK3CUox318AxB9bVrBoZl2L8NmWRQMsS4/exec";
+  const PRODUCT = "zhuyin_game";
+  const VERSION = "v0.1.0";
+  const SOURCE = "website";
+
+  function getDeviceId(){
+    const key = "maggie_device_id";
+    let id = localStorage.getItem(key);
+    if(!id){
+      id = "dev_" + Date.now() + "_" + Math.random().toString(36).substring(2,10);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  }
+
+  window.trackGameEvent = function(event, data = {}){
+    if(!event) return;
+
+    fetch(ANALYTICS_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        product: PRODUCT,
+        event: event,
+        deviceId: getDeviceId(),
+        version: VERSION,
+        pet: "",
+        task: data.task || "",
+        source: data.source || SOURCE
+      }),
+      keepalive: true
+    }).catch(function(err){
+      console.warn("[Maggie Lab Analytics]", err);
+    });
+  };
+
+  window.trackGameEvent("visit_game");
+})();
+</script>
+
+<script>
 // ── Data ──
 const STAGES = {
   easy: {
@@ -1086,6 +1130,7 @@ function updateStageButtons() {
 
 // ── Stage Start ──
 function startStage(stageId) {
+  if (window.trackGameEvent) window.trackGameEvent("start_game", { task: stageId });
   const req = UNLOCK[stageId];
   if (req && !(state.stageStars[req] > 0)) return;
 
@@ -1222,6 +1267,7 @@ function checkAnswer(input) {
   if (!typed) return;
 
   if (typed === word.text) {
+    if (window.trackGameEvent) window.trackGameEvent("typing_correct", { task: state.currentStage });
     clearInterval(state.timerInterval);
     input.className = 'type-input correct';
     state.combo++;
@@ -1245,6 +1291,7 @@ function checkAnswer(input) {
 }
 
 function handleWrong() {
+  if (window.trackGameEvent) window.trackGameEvent("typing_error", { task: state.currentStage });
   state.combo = 0;
   updateDot(state.wordIndex, 'wrong');
   highlightChars('wrong');
@@ -1287,6 +1334,7 @@ function updateDot(i, cls) {
 
 // ── End Game ──
 function endGame() {
+  if (window.trackGameEvent) window.trackGameEvent("finish_level", { task: state.currentStage });
   clearInterval(state.timerInterval);
   const total = state.words.length;
   const pct = state.correctCount / total;
