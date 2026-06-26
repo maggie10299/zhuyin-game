@@ -267,13 +267,15 @@
   /* Input field */
   .input-area {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
     margin-top: 32px;
+    width: 100%;
   }
   .type-input {
-    flex: 1;
-    padding: 14px 18px;
+    flex: 1 1 0%;
+    min-width: 0;
+    padding: 14px 16px;
     font-size: 1.3rem;
     font-family: 'Noto Sans TC', sans-serif;
     border: 3px solid #ddd;
@@ -288,7 +290,8 @@
   .type-input.incorrect { border-color: var(--pink); background: #fff0f3; }
 
   .skip-btn {
-    padding: 14px 18px;
+    flex-shrink: 0;
+    padding: 14px 16px;
     background: #f0f0f0;
     border: none;
     border-radius: 14px;
@@ -296,6 +299,7 @@
     font-weight: 700;
     cursor: pointer;
     color: #666;
+    white-space: nowrap;
     transition: background 0.2s;
   }
   .skip-btn:hover { background: #e0e0e0; }
@@ -465,6 +469,38 @@
   .player-tag .p-name-sm { font-size: 0.82rem; font-weight: 900; color: var(--dark); }
   .player-tag .switch-hint { font-size: 0.65rem; color: #aaa; }
 
+  /* ── Input Mode Toggle ── */
+  .mode-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .mode-toggle {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: 50px;
+    padding: 5px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    gap: 4px;
+  }
+  .mode-btn {
+    padding: 8px 20px;
+    border-radius: 40px;
+    border: none;
+    background: transparent;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn.active {
+    background: var(--dark);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
   /* ── Name Modal ── */
   .modal-overlay {
     position: fixed;
@@ -574,10 +610,24 @@
 
   /* Responsive */
   @media (max-width: 480px) {
+    body { padding: 12px; }
     .header h1 { font-size: 1.8rem; }
     .stage-row { flex-wrap: wrap; }
     .stage-btn { width: 130px; }
     .word-char { font-size: 2.2rem; }
+    .game-card { padding: 20px 16px; }
+    .progress-area { padding: 12px 14px; gap: 10px; }
+    .type-input { font-size: 1.1rem; padding: 12px 14px; }
+    .skip-btn { padding: 12px 14px; font-size: 0.8rem; }
+    .input-area { margin-top: 24px; }
+    .player-list { gap: 8px; }
+    .player-btn { width: 100px; padding: 12px 8px; }
+  }
+
+  @media (max-width: 360px) {
+    .type-input { font-size: 1rem; }
+    .word-char { font-size: 1.9rem; margin: 0 2px; }
+    .stage-btn { width: 110px; }
   }
 </style>
 </head>
@@ -595,6 +645,14 @@
   <div class="header">
     <h1>🌟 注音打字冒險 🌟</h1>
     <p>用鍵盤征服每一個注音！</p>
+  </div>
+
+  <!-- Zhuyin / Pinyin Toggle -->
+  <div class="mode-toggle-wrap">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeBtnZhuyin" onclick="setInputMode('zhuyin')">注音 ㄅㄆㄇ</button>
+      <button class="mode-btn" id="modeBtnPinyin" onclick="setInputMode('pinyin')">Pinyin 拼音</button>
+    </div>
   </div>
 
   <!-- XP / Level Bar -->
@@ -764,54 +822,54 @@ const STAGES = {
     name: '🌱 新手村',
     timePerWord: 15,
     words: [
-      { text: '貓', zhuyin: 'ㄇㄠ' },
-      { text: '狗', zhuyin: 'ㄍㄡ' },
-      { text: '魚', zhuyin: 'ㄩ' },
-      { text: '鳥', zhuyin: 'ㄋㄧㄠ' },
-      { text: '花', zhuyin: 'ㄏㄨㄚ' },
-      { text: '樹', zhuyin: 'ㄕㄨ' },
-      { text: '水', zhuyin: 'ㄕㄨㄟ' },
-      { text: '火', zhuyin: 'ㄏㄨㄛ' },
-      { text: '山', zhuyin: 'ㄕㄢ' },
-      { text: '雨', zhuyin: 'ㄩˇ' },
+      { text: '貓', zhuyin: 'ㄇㄠ', pinyin: 'māo' },
+      { text: '狗', zhuyin: 'ㄍㄡˇ', pinyin: 'gǒu' },
+      { text: '魚', zhuyin: 'ㄩˊ', pinyin: 'yú' },
+      { text: '鳥', zhuyin: 'ㄋㄧㄠˇ', pinyin: 'niǎo' },
+      { text: '花', zhuyin: 'ㄏㄨㄚ', pinyin: 'huā' },
+      { text: '樹', zhuyin: 'ㄕㄨˋ', pinyin: 'shù' },
+      { text: '水', zhuyin: 'ㄕㄨㄟˇ', pinyin: 'shuǐ' },
+      { text: '火', zhuyin: 'ㄏㄨㄛˇ', pinyin: 'huǒ' },
+      { text: '山', zhuyin: 'ㄕㄢ', pinyin: 'shān' },
+      { text: '雨', zhuyin: 'ㄩˇ', pinyin: 'yǔ' },
     ]
   },
   medium: {
     name: '🌻 草原關',
     timePerWord: 20,
     words: [
-      { text: '蘋果', zhuyin: 'ㄆㄧㄥˊ ㄍㄨㄛˇ' },
-      { text: '香蕉', zhuyin: 'ㄒㄧㄤ ㄐㄧㄠ' },
-      { text: '西瓜', zhuyin: 'ㄒㄧ ㄍㄨㄚ' },
-      { text: '太陽', zhuyin: 'ㄊㄞˋ ㄧㄤˊ' },
-      { text: '月亮', zhuyin: 'ㄩㄝˋ ㄌㄧㄤˋ' },
-      { text: '星星', zhuyin: 'ㄒㄧㄥ ㄒㄧㄥ' },
-      { text: '學校', zhuyin: 'ㄒㄩㄝˊ ㄒㄧㄠˋ' },
-      { text: '老師', zhuyin: 'ㄌㄠˇ ㄕ' },
+      { text: '蘋果', zhuyin: 'ㄆㄧㄥˊ ㄍㄨㄛˇ', pinyin: 'píng guǒ' },
+      { text: '香蕉', zhuyin: 'ㄒㄧㄤ ㄐㄧㄠ', pinyin: 'xiāng jiāo' },
+      { text: '西瓜', zhuyin: 'ㄒㄧ ㄍㄨㄚ', pinyin: 'xī guā' },
+      { text: '太陽', zhuyin: 'ㄊㄞˋ ㄧㄤˊ', pinyin: 'tài yáng' },
+      { text: '月亮', zhuyin: 'ㄩㄝˋ ㄌㄧㄤˋ', pinyin: 'yuè liang' },
+      { text: '星星', zhuyin: 'ㄒㄧㄥ ㄒㄧㄥ', pinyin: 'xīng xing' },
+      { text: '學校', zhuyin: 'ㄒㄩㄝˊ ㄒㄧㄠˋ', pinyin: 'xué xiào' },
+      { text: '老師', zhuyin: 'ㄌㄠˇ ㄕ', pinyin: 'lǎo shī' },
     ]
   },
   hard: {
     name: '🏔️ 山頂關',
     timePerWord: 25,
     words: [
-      { text: '巧克力', zhuyin: 'ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ' },
-      { text: '冰淇淋', zhuyin: 'ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ' },
-      { text: '圖書館', zhuyin: 'ㄊㄨˊ ㄕㄨ ㄍㄨㄢˇ' },
-      { text: '運動場', zhuyin: 'ㄩㄣˋ ㄉㄨㄥˋ ㄔㄤˇ' },
-      { text: '小提琴', zhuyin: 'ㄒㄧㄠˇ ㄊㄧˊ ㄑㄧㄣˊ' },
-      { text: '電腦課', zhuyin: 'ㄉㄧㄢˋ ㄋㄠˇ ㄎㄜˋ' },
-      { text: '好朋友', zhuyin: 'ㄏㄠˇ ㄆㄥˊ ㄧㄡˇ' },
+      { text: '巧克力', zhuyin: 'ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ', pinyin: 'qiǎo kè lì' },
+      { text: '冰淇淋', zhuyin: 'ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ', pinyin: 'bīng qí lín' },
+      { text: '圖書館', zhuyin: 'ㄊㄨˊ ㄕㄨ ㄍㄨㄢˇ', pinyin: 'tú shū guǎn' },
+      { text: '運動場', zhuyin: 'ㄩㄣˋ ㄉㄨㄥˋ ㄔㄤˇ', pinyin: 'yùn dòng chǎng' },
+      { text: '小提琴', zhuyin: 'ㄒㄧㄠˇ ㄊㄧˊ ㄑㄧㄣˊ', pinyin: 'xiǎo tí qín' },
+      { text: '電腦課', zhuyin: 'ㄉㄧㄢˋ ㄋㄠˇ ㄎㄜˋ', pinyin: 'diàn nǎo kè' },
+      { text: '好朋友', zhuyin: 'ㄏㄠˇ ㄆㄥˊ ㄧㄡˇ', pinyin: 'hǎo péng yǒu' },
     ]
   },
   boss: {
     name: '🐉 龍城決戰',
     timePerWord: 35,
     words: [
-      { text: '今天天氣很好', zhuyin: 'ㄐㄧㄣ ㄊㄧㄢ ㄊㄧㄢ ㄑㄧˋ ㄏㄣˇ ㄏㄠˇ' },
-      { text: '我喜歡吃蘋果', zhuyin: 'ㄨㄛˇ ㄒㄧˇ ㄏㄨㄢ ㄔ ㄆㄧㄥˊ ㄍㄨㄛˇ' },
-      { text: '小貓在睡覺', zhuyin: 'ㄒㄧㄠˇ ㄇㄠ ㄗㄞˋ ㄕㄨㄟˋ ㄐㄧㄠˋ' },
-      { text: '我愛我的家人', zhuyin: 'ㄨㄛˇ ㄞˋ ㄨㄛˇ ㄉㄜ˙ ㄐㄧㄚ ㄖㄣˊ' },
-      { text: '努力學習很重要', zhuyin: 'ㄋㄨˇ ㄌㄧˋ ㄒㄩㄝˊ ㄒㄧˊ ㄏㄣˇ ㄓㄨㄥˋ ㄧㄠˋ' },
+      { text: '今天天氣很好', zhuyin: 'ㄐㄧㄣ ㄊㄧㄢ ㄊㄧㄢ ㄑㄧˋ ㄏㄣˇ ㄏㄠˇ', pinyin: 'jīn tiān tiān qì hěn hǎo' },
+      { text: '我喜歡吃蘋果', zhuyin: 'ㄨㄛˇ ㄒㄧˇ ㄏㄨㄢ ㄔ ㄆㄧㄥˊ ㄍㄨㄛˇ', pinyin: 'wǒ xǐ huan chī píng guǒ' },
+      { text: '小貓在睡覺', zhuyin: 'ㄒㄧㄠˇ ㄇㄠ ㄗㄞˋ ㄕㄨㄟˋ ㄐㄧㄠˋ', pinyin: 'xiǎo māo zài shuì jiào' },
+      { text: '我愛我的家人', zhuyin: 'ㄨㄛˇ ㄞˋ ㄨㄛˇ ㄉㄜ˙ ㄐㄧㄚ ㄖㄣˊ', pinyin: 'wǒ ài wǒ de jiā rén' },
+      { text: '努力學習很重要', zhuyin: 'ㄋㄨˇ ㄌㄧˋ ㄒㄩㄝˊ ㄒㄧˊ ㄏㄣˇ ㄓㄨㄥˋ ㄧㄠˋ', pinyin: 'nǔ lì xué xí hěn zhòng yào' },
     ]
   },
   paragraph: {
@@ -819,11 +877,11 @@ const STAGES = {
     timePerWord: 60,
     isParagraph: true,
     words: [
-      { text: '春天來了，花園裡開滿了美麗的花朵。', zhuyin: '' },
-      { text: '小明每天早上都會幫媽媽打掃家裡，讓家變得乾淨整潔。', zhuyin: '' },
-      { text: '學習注音符號需要耐心和練習，每天進步一點點就很棒了。', zhuyin: '' },
-      { text: '一家人一起吃晚飯，分享今天發生的有趣事情，感覺好幸福。', zhuyin: '' },
-      { text: '圖書館裡有很多書，每一本都是通往新世界的大門。', zhuyin: '' },
+      { text: '春天來了，花園裡開滿了美麗的花朵。', zhuyin: '', pinyin: 'chūn tiān lái le, huā yuán lǐ kāi mǎn le měi lì de huā duǒ.' },
+      { text: '小明每天早上都會幫媽媽打掃家裡，讓家變得乾淨整潔。', zhuyin: '', pinyin: 'xiǎo míng měi tiān zǎo shang dōu huì bāng mā ma dǎ sǎo jiā lǐ, ràng jiā biàn dé gān jìng zhěng jié.' },
+      { text: '學習注音符號需要耐心和練習，每天進步一點點就很棒了。', zhuyin: '', pinyin: 'xué xí zhù yīn fú hào xū yào nài xīn hé liàn xí, měi tiān jìn bù yì diǎn diǎn jiù hěn bàng le.' },
+      { text: '一家人一起吃晚飯，分享今天發生的有趣事情，感覺好幸福。', zhuyin: '', pinyin: 'yì jiā rén yì qǐ chī wǎn fàn, fēn xiǎng jīn tiān fā shēng de yǒu qù shì qíng, gǎn jué hǎo xìng fú.' },
+      { text: '圖書館裡有很多書，每一本都是通往新世界的大門。', zhuyin: '', pinyin: 'tú shū guǎn lǐ yǒu hěn duō shū, měi yì běn dōu shì tōng wǎng xīn shì jiè de dà mén.' },
     ]
   },
   survival: {
@@ -831,16 +889,16 @@ const STAGES = {
     timePerWord: 20,
     isSurvival: true,
     words: [
-      { text: '蘋果', zhuyin: 'ㄆㄧㄥˊ ㄍㄨㄛˇ' },
-      { text: '星星', zhuyin: 'ㄒㄧㄥ ㄒㄧㄥ' },
-      { text: '圖書館', zhuyin: 'ㄊㄨˊ ㄕㄨ ㄍㄨㄢˇ' },
-      { text: '巧克力', zhuyin: 'ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ' },
-      { text: '好朋友', zhuyin: 'ㄏㄠˇ ㄆㄥˊ ㄧㄡˇ' },
-      { text: '學校', zhuyin: 'ㄒㄩㄝˊ ㄒㄧㄠˋ' },
-      { text: '太陽', zhuyin: 'ㄊㄞˋ ㄧㄤˊ' },
-      { text: '冰淇淋', zhuyin: 'ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ' },
-      { text: '小提琴', zhuyin: 'ㄒㄧㄠˇ ㄊㄧˊ ㄑㄧㄣˊ' },
-      { text: '運動場', zhuyin: 'ㄩㄣˋ ㄉㄨㄥˋ ㄔㄤˇ' },
+      { text: '蘋果', zhuyin: 'ㄆㄧㄥˊ ㄍㄨㄛˇ', pinyin: 'píng guǒ' },
+      { text: '星星', zhuyin: 'ㄒㄧㄥ ㄒㄧㄥ', pinyin: 'xīng xing' },
+      { text: '圖書館', zhuyin: 'ㄊㄨˊ ㄕㄨ ㄍㄨㄢˇ', pinyin: 'tú shū guǎn' },
+      { text: '巧克力', zhuyin: 'ㄑㄧㄠˇ ㄎㄜˋ ㄌㄧˋ', pinyin: 'qiǎo kè lì' },
+      { text: '好朋友', zhuyin: 'ㄏㄠˇ ㄆㄥˊ ㄧㄡˇ', pinyin: 'hǎo péng yǒu' },
+      { text: '學校', zhuyin: 'ㄒㄩㄝˊ ㄒㄧㄠˋ', pinyin: 'xué xiào' },
+      { text: '太陽', zhuyin: 'ㄊㄞˋ ㄧㄤˊ', pinyin: 'tài yáng' },
+      { text: '冰淇淋', zhuyin: 'ㄅㄧㄥ ㄑㄧˊ ㄌㄧㄣˊ', pinyin: 'bīng qí lín' },
+      { text: '小提琴', zhuyin: 'ㄒㄧㄠˇ ㄊㄧˊ ㄑㄧㄣˊ', pinyin: 'xiǎo tí qín' },
+      { text: '運動場', zhuyin: 'ㄩㄣˋ ㄉㄨㄥˋ ㄔㄤˇ', pinyin: 'yùn dòng chǎng' },
     ]
   }
 };
@@ -852,6 +910,27 @@ const STAGE_ORDER = ['easy', 'medium', 'hard', 'boss', 'paragraph', 'survival'];
 // ── Multi-Player System ──
 const AVATARS = ['🐱','🐶','🐰','🐸','🦊','🐼','🐨','🦁','🐯','🐻','🦄','🐲'];
 let currentPlayerId = null;
+
+// ── Input Mode (Zhuyin / Pinyin) ──
+let inputMode = localStorage.getItem('zhuyin_input_mode') || 'zhuyin';
+
+function setInputMode(mode) {
+  inputMode = mode;
+  try { localStorage.setItem('zhuyin_input_mode', mode); } catch(e) {}
+  document.getElementById('modeBtnZhuyin').classList.toggle('active', mode === 'zhuyin');
+  document.getElementById('modeBtnPinyin').classList.toggle('active', mode === 'pinyin');
+  const input = document.getElementById('typeInput');
+  if (input) {
+    input.placeholder = mode === 'pinyin' ? 'Type pinyin, press Enter ↵' : '打完字按 Enter 確認 ↵';
+  }
+  // Re-render current word if mid-game
+  if (document.getElementById('gameScreen').classList.contains('active') && state.words.length) {
+    const word = state.words[state.wordIndex];
+    const stageData = STAGES[state.currentStage];
+    if (stageData.isParagraph) renderParagraphDisplay(word);
+    else renderWordDisplay(word);
+  }
+}
 
 function loadPlayers() {
   try { return JSON.parse(localStorage.getItem('zhuyin_players') || '[]'); } catch(e) { return []; }
@@ -1079,17 +1158,22 @@ function loadWord() {
 
 function renderParagraphDisplay(word) {
   const wrap = document.getElementById('wordDisplay');
-  wrap.innerHTML = `<div style="font-size:1.2rem;font-weight:700;color:var(--dark);line-height:1.8;text-align:left;background:#f9f9f9;padding:16px;border-radius:12px;border-left:4px solid var(--purple);">${word.text}</div>`;
+  const hint = inputMode === 'pinyin' && word.pinyin
+    ? `<div style="font-size:0.8rem;color:#999;margin-top:8px;font-style:italic;">${word.pinyin}</div>`
+    : '';
+  wrap.innerHTML = `<div style="font-size:1.2rem;font-weight:700;color:var(--dark);line-height:1.8;text-align:left;background:#f9f9f9;padding:16px;border-radius:12px;border-left:4px solid var(--purple);">${word.text}${hint}</div>`;
 }
 
 function renderWordDisplay(word) {
   const chars = word.text.split('');
-  const zhuyins = word.zhuyin.split(' ');
+  const hints = inputMode === 'pinyin' && word.pinyin
+    ? word.pinyin.split(' ')
+    : word.zhuyin.split(' ');
   const wrap = document.getElementById('wordDisplay');
   wrap.innerHTML = chars.map((c, i) => `
     <span class="word-char" id="wc-${i}">
       ${c}
-      <span class="zhuyin-hint">${zhuyins[i] || ''}</span>
+      <span class="zhuyin-hint">${hints[i] || ''}</span>
     </span>`).join('');
 }
 
@@ -1373,6 +1457,7 @@ function clearLeaderboard() {
 }
 
 // ── Init ──
+setInputMode(inputMode);
 renderPlayerList();
 // If no players yet, open new player modal automatically
 if (loadPlayers().length === 0) setTimeout(openNewPlayerModal, 300);
